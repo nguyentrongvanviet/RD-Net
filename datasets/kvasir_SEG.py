@@ -30,17 +30,18 @@ class kvasir_SEG(Dataset):
         for img_id in self.images_list:
             raw_name = img_id.split('.')[0] # Get the filename without the extension
             self.id_list.append(raw_name)
-            self.img_list.append(os.path.join(self.data_path, 'images', img_id))  # Images are .jpg
             
-            # Masks are usually .png. If yours are .jpg, change the line below to: raw_name + '.jpg'
-            self.gt_list.append(os.path.join(self.data_path, 'masks', raw_name + '.png'))  
+            # Since img_id already includes '.jpg', we can just use it directly for images and masks
+            self.img_list.append(os.path.join(self.data_path, 'images', img_id))  
+            self.gt_list.append(os.path.join(self.data_path, 'masks', img_id))  
 
         if True:
             self.depth_list = []
             self.depth1_list = []
             for img_id in self.images_list:
                 raw_name = img_id.split('.')[0]
-                # Force .png extension for depth maps based on your directory inspection
+                
+                # Force .png extension for depth maps
                 self.depth_list.append(os.path.join(self.data_path, 'depth_rgb', raw_name + '.png'))  
                 self.depth1_list.append(os.path.join(self.data_path, 'depth', raw_name + '.png'))
 
