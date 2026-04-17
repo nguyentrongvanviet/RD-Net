@@ -6,6 +6,7 @@ import numpy as np
 import random
 from PIL import ImageFilter
 from PIL import Image
+
 def blur(img, p=0.5):
     if random.random() < p:
         sigma = np.random.uniform(0.1, 2.0)
@@ -27,19 +28,21 @@ class kvasir_SEG(Dataset):
         self.images_list = sorted(self.images_list)
 
         for img_id in self.images_list:
-            self.id_list.append(img_id.split('.')[0])
-            self.img_list.append(os.path.join(self.data_path, 'images', img_id))  # Image paths
-            self.gt_list.append(os.path.join(self.data_path, 'masks', img_id))  # Mask paths
+            raw_name = img_id.split('.')[0] # Get the filename without the extension
+            self.id_list.append(raw_name)
+            self.img_list.append(os.path.join(self.data_path, 'images', img_id))  # Images are .jpg
+            
+            # Masks are usually .png. If yours are .jpg, change the line below to: raw_name + '.jpg'
+            self.gt_list.append(os.path.join(self.data_path, 'masks', raw_name + '.png'))  
 
         if True:
             self.depth_list = []
             self.depth1_list = []
             for img_id in self.images_list:
-                self.depth_list.append(os.path.join(self.data_path, 'depth_rgb', img_id))  # Depth paths for train mode
-                self.depth1_list.append(os.path.join(self.data_path, 'depth', img_id))
-
-
-
+                raw_name = img_id.split('.')[0]
+                # Force .png extension for depth maps based on your directory inspection
+                self.depth_list.append(os.path.join(self.data_path, 'depth_rgb', raw_name + '.png'))  
+                self.depth1_list.append(os.path.join(self.data_path, 'depth', raw_name + '.png'))
 
         if transform is None:
             if mode == 'train':
@@ -73,6 +76,7 @@ class kvasir_SEG(Dataset):
                 self.cache_depth.append(Image.open(depth_path).convert('RGB'))
                 self.cache_depth1.append(Image.open(depth1_path).convert('L'))
                 self.cache_gt.append(Image.open(gt_path).convert('L'))
+                
         elif self.cache and (mode == 'valid' or mode == 'test'):
             self.cache_img = list()
             self.cache_depth = list()
@@ -88,6 +92,7 @@ class kvasir_SEG(Dataset):
                 self.cache_depth.append(Image.open(depth_path).convert('RGB'))
                 self.cache_depth1.append(Image.open(depth1_path).convert('L'))
                 self.cache_gt.append(Image.open(gt_path).convert('L'))
+
     def __getitem__(self, index):
         if self.cache:
             img = self.cache_img[index]
@@ -101,14 +106,11 @@ class kvasir_SEG(Dataset):
             img = Image.open(img_path).convert('RGB')
             gt = Image.open(gt_path).convert('L')
 
-
             depth_path = self.depth_list[index]
             depth = Image.open(depth_path).convert('RGB')  # Load depth data for train mode
             depth1_path = self.depth1_list[index]
             depth1 = Image.open(depth1_path).convert('L')  # Load depth data for train mode
 
-
-        #data = {'image': img, 'label': gt}
         if self.mode == 'train':
             data = {'image': img, 'label': gt, 'depth': depth, 'depth1': depth1} # Add depth data in train mode
 
@@ -122,7 +124,6 @@ class kvasir_SEG(Dataset):
                 if random.random() < 0.8:
                     img_s1 = transforms.ColorJitter(0.5, 0.5, 0.5, 0.25)(img_s1)
                 img_s1 = blur(img_s1, p=0.5)
-
 
                 img_s1 = to_tensor(img_s1)
                 data['image'] = to_tensor(data['image'])
